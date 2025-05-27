@@ -1,23 +1,28 @@
-# string_calculator.rb
 class StringCalculator
-	def self.add(numbers)
-		return 0 if numbers.empty?
-        if numbers.start_with?("//")
-            if numbers =~ %r{//\[(.+?)\]\n(.*)}
-                delimiter = Regexp.escape($1)
-                numbers = $2
-                nums = numbers.split(/#{delimiter}/).map(&:to_i)
-            else
-                delimiter, numbers = numbers.match(%r{//(.)\n(.*)})[1, 2]
-                nums = numbers.split(delimiter).map(&:to_i)
-            end
+    def self.add(numbers)
+      return 0 if numbers.strip.empty?
+  
+      delimiters = /[\n,]/ # default
+  
+      if numbers.start_with?("//")
+        header, numbers = numbers.split("\n", 2)
+  
+        if header.include?("[")
+          # Supports multiple or long delimiters
+          custom_delimiters = header.scan(/\[(.*?)\]/).flatten
+          pattern = custom_delimiters.map { |d| Regexp.escape(d) }.join("|")
+          delimiters = Regexp.new(pattern)
         else
-            nums = numbers.split(/[\n,]/).map(&:to_i)
+          # Single-character delimiter
+          delimiters = Regexp.new(Regexp.escape(header[2]))
         end
-
-        negatives = nums.select { |n| n < 0 }
-        raise "negatives not allowed: #{negatives.join(', ')}" unless negatives.empty?
-
-        nums.reject { |n| n > 1000 }.sum
-	end
+      end
+  
+      tokens = numbers.split(delimiters).map(&:to_i)
+  
+      negatives = tokens.select { |n| n < 0 }
+      raise "negatives not allowed: #{negatives.join(', ')}" unless negatives.empty?
+  
+      tokens.reject { |n| n > 1000 }.sum
+    end
 end
